@@ -7,39 +7,35 @@ Parameters:
 - Wvs Vectores de peso
 """
 
-module Metaheuristics
+using Metaheuristics
 
-mutable struct CTAEA <: AbstractParameters
+mutable struct CTAEA <: Metaheuristics.AbstractParameters
     nobjectives::Int
     N::Int #individuos
-    Wv::Array{Vector{Float64}} #Vectores de peso
 end
 
-function CTAEA(Wv; 
-    N = 100,
-    information = Information(),
-    options = Options()
-)
-
-    if isempty(Wv)
-        error("Provide weights points")
+function CTAEA(weights; N = 100, information = Information(), options = Options())
+    
+    if isempty(weights)
+        error("Provide weighted vectors")
     end
 
     nobjectives = length(weights[1])
 
     parameters = CTAEA(nobjectives,N)
+
     alg = Algorithm(
         parameters,
         information = information,
-        options = options,
-    )
+        options = options,)
+    
     alg
 end
 
 function initialize!(
     status,
     parameters::CTAEA,
-    problem::AbstractProblem,
+    problem::Metaheuristics.AbstractProblem,
     information::Information,
     options::Options,
     args...;
@@ -63,19 +59,22 @@ end
 
 function update_state!(
     status::State,
-    parameters::MOEAD_DE,
-    problem::AbstractProblem,
+    parameters::CTAEA,
+    problem::Metaheuristics.AbstractProblem,
     information::Information,
     options::Options,
     args...;
-    kargs...
-)
+    kargs...)
 
     N = parameters.N
     D = size(problem.bounds, 2)
-    CA=UpdateCA([],status.population,parameters.Wv);            
-    DA=UpdateDA(CA,[],status.population,parameters.Wv);
 
+end
+    
+    """CA=UpdateCA([],status.population,parameters.Wv);            
+    DA=UpdateDA(CA,[],status.population,parameters.Wv);
+    
+    
     stop_criteria!(status, parameters, problem, information, options)
     while !status.stop    
     
@@ -125,27 +124,25 @@ function update_state!(
         CA=UpdateCA(CA,Q,W);
         DA=UpdateDA(CA,DA,Q,W);
     end
-end
-
-
-
+    """
 
 function stop_criteria_ctaea(
     status::State,
-    parameters::MOEAD_DE,
-    problem::AbstractProblem,
+    parameters::CTAEA,
+    problem::Metaheuristics.AbstractProblem,
     information::Information,
     options::Options,
     args...;
     kargs...
     )
+
     return status.iteration > options.iterations
 end
 
 function final_stage!(
     status,
-    parameters::DE,
-    problem::AbstractProblem,
+    parameters::CTAEA,
+    problem::Metaheuristics.AbstractProblem,
     information::Information,
     options::Options,
     args...;
@@ -156,7 +153,7 @@ end
 
 
 #######################################################################################################################################
-
+"""
 function UpdateCA(CA, Q, Wv)
     
     S=[];       # S is the set used for output
@@ -306,5 +303,5 @@ function UpdateDA()
 
 
 end
-
+"""
 

@@ -1,7 +1,7 @@
 #import Pkg; 
 #Pkg.add("Distances")
 using Distances
-using Metaheuristics
+using Metaheuristics:TestProblems, optimize
 include("Multiobjective/RW_MOP_2021/RW_MOP_2021.jl")
 include("CTAEA.jl")
 
@@ -15,10 +15,10 @@ function main()
     nrestricciones = 0
 
     # reference points (Das and Dennis's method)
-    Wv = gen_ref_dirs(nobjectives, npartitions)
+    weights = gen_ref_dirs(nobjectives, npartitions)
 
     # algoritmo a utilizar
-    ctaea = CTAEA(Wv, options = Options(debug=false, iterations= 250))
+    ctaea = CTAEA(weights, options = Options(debug=false, iterations= 250))
 
     # inicializar el proceso de optimización
     resultado = optimize(f, bounds, ctaea)
