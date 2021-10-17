@@ -2,8 +2,13 @@
 using Distances
 using Metaheuristics
 
-include("HardTestProblems/HardTestProblems.jl")
-using .HardTestProblems
+try
+    using HardTestProblems
+catch
+    # Install module
+    import Pkg; Pkg.add(url="https://github.com/jmejia8/HardTestProblems.jl")
+end
+using HardTestProblems
 
 include("CTAEA.jl")
 
@@ -16,22 +21,20 @@ function main()
     
     #Dimensions
     D = conf[:n]
+    # objectives
+    M = conf[:fn]
 
     #Setting bounds
     xmin, xmax = conf[:xmin],conf[:xmax]
-    _bounds = (xmin, xmax)
-    bounds = vcat(transpose.(_bounds)...)
+    bounds = [xmin xmax]
 
-    #Information - doubt
-    information = Information(f_optimum = 0.0)
-
-    options = Options(f_calls_limit = 9000*10, f_tol = 1e-5)
+    options = Options(f_calls_limit = 9000*10, debug=false)
 
     # reference points (Das and Dennis's method)
-    weights = gen_ref_dirs(D, 10)
+    weights = gen_ref_dirs(M, 10)
 
     # algoritmo a utilizar
-    algorithm = CTAEA(weights,information = information, options = options)
+    algorithm = CTAEA(weights, options = options)
 
     # Start optimization process
     resultado = optimize(f, bounds, algorithm)
