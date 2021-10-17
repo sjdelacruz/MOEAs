@@ -1,13 +1,5 @@
-"""
-CTAEA
-Parameters:
-
-- nobjectives numero de objetivos
-- N Tamaño de la poblacion
-- Wvs Vectores de peso
-"""
-
 using Metaheuristics
+##Duda al llamar la funcion Algorithm
 
 mutable struct CTAEA <: Metaheuristics.AbstractParameters
     nobjectives::Int

@@ -12,14 +12,14 @@ function UpdateDA(CA,Q,W,N)
     N=size(W,1)
 
     #Feasible solutions
-    Sc = map(x ->  Metaheuristics.violationsSum(x) == 0, Hc)
+    Sc = sum_violations.(Hc) .== 0
 
     #Number of feasible solutions
     feasibles = size(Sx,1)
 
-    if feasibles == N
+    """if feasibles == N
         CA = Sc
-    elseif 
+    elseif feasibles == N
 
         #Non dominated sorting
         Metaheuristics.fast_non_dominated_sort!(Sc)
@@ -29,10 +29,10 @@ function UpdateDA(CA,Q,W,N)
         fcounter = size(Sc,1)
         i=0
         while fcounter < N
+            
             S = vcat(Sc,FrontNO[i])
-
             fcounter += size(FrontNo[i],1)
-            i++
+            i=i+1
         end
 
         if size(S,1) > N
@@ -59,8 +59,8 @@ function UpdateDA(CA,Q,W,N)
             dist_ind = []
             
             #Adjust distances
-            for x in crowded_region
-            end
+            #for x in crowded_region
+            #end
 
             #Minimun values
             St = argmin(dist)
@@ -80,7 +80,7 @@ function UpdateDA(CA,Q,W,N)
         ndif = size(Sc,1)
         while ndif < N
             S = vcat(S,FrontNO[i])
-            i++
+            i=i+1
             ndif += size(FrontNO[i],1)
         end
 
@@ -91,6 +91,5 @@ function UpdateDA(CA,Q,W,N)
         end
 
     end
-
-
-    
+    """
+end

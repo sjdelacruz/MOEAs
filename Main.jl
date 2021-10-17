@@ -1,30 +1,41 @@
-#import Pkg; 
-#Pkg.add("Distances")
+
 using Distances
-using Metaheuristics:TestProblems, optimize
-include("Multiobjective/RW_MOP_2021/RW_MOP_2021.jl")
+using Metaheuristics
+
+include("HardTestProblems/HardTestProblems.jl")
+using .HardTestProblems
+
 include("CTAEA.jl")
 
-
 function main()
+    
+    #Objective function and a set of parameters
+    f, conf = get_RW_MOP_problem(1)
+    fx, gx, hx = f(conf[:xmin])
+    vio = sum(max.(0.0, gx .<= 0)) + sum(max.(0.0, abs.(hx) .- 1e-2 .<= 0))
+    
+    #Dimensions
+    D = conf[:n]
 
-    # objective function
-    f, bounds, pareto_solutions = TestProblems.get_problem(:ZDT3);
-    nobjectives = 2
-    npartitions = 100
-    nrestricciones = 0
+    #Setting bounds
+    xmin, xmax = conf[:xmin],conf[:xmax]
+    _bounds = (xmin, xmax)
+    bounds = vcat(transpose.(_bounds)...)
+
+    #Information - doubt
+    information = Information(f_optimum = 0.0)
+
+    options = Options(f_calls_limit = 9000*10, f_tol = 1e-5)
 
     # reference points (Das and Dennis's method)
-    weights = gen_ref_dirs(nobjectives, npartitions)
+    weights = gen_ref_dirs(D, 10)
 
     # algoritmo a utilizar
-    ctaea = CTAEA(weights, options = Options(debug=false, iterations= 250))
+    algorithm = CTAEA(weights,information = information, options = options)
 
-    # inicializar el proceso de optimización
-    resultado = optimize(f, bounds, ctaea)
+    # Start optimization process
+    resultado = optimize(f, bounds, algorithm)
 
-    #Mostrar resultados
-    display(status_moead)
 end
 
 main()
