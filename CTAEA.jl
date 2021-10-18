@@ -4,6 +4,7 @@ using Metaheuristics
 mutable struct CTAEA <: Metaheuristics.AbstractParameters
     nobjectives::Int
     N::Int #individuos
+    weights
 end
 
 function CTAEA(weights; N = 100, information = Information(), options = Options())
@@ -14,9 +15,9 @@ function CTAEA(weights; N = 100, information = Information(), options = Options(
 
     nobjectives = length(weights[1])
 
-    parameters = CTAEA(nobjectives,N)
+    parameters = CTAEA(nobjectives, N, weights)
 
-    alg = Algorithm(
+    alg = Metaheuristics.Algorithm(
         parameters,
         information = information,
         options = options,)
@@ -24,7 +25,7 @@ function CTAEA(weights; N = 100, information = Information(), options = Options(
     alg
 end
 
-function initialize!(
+function Metaheuristics.initialize!(
     status,
     parameters::CTAEA,
     problem::Metaheuristics.AbstractProblem,
@@ -42,25 +43,31 @@ function initialize!(
         options.f_calls_limit = options.iterations * parameters.N + 1
     end
 
-    status = gen_initial_state(problem,parameters,information,options,status)
-    D = size(problem.bounds, 2)
-    parameters.nobjectives = length(status.population[1].f)
+    return Metaheuristics.gen_initial_state(problem,parameters,information,options,status)
 
-    return status
 end
 
-function update_state!(
-    status::State,
+function Metaheuristics.update_state!(
+    status,
     parameters::CTAEA,
-    problem::Metaheuristics.AbstractProblem,
-    information::Information,
-    options::Options,
+    problem,
+    information,
+    options,
     args...;
     kargs...)
 
     N = parameters.N
     D = size(problem.bounds, 2)
 
+
+
+    # optimization process here
+
+
+
+    # remove following lines when this function works correctly
+    @info "I'm in update_state :)"
+    status.stop = true
 end
     
     """CA=UpdateCA([],status.population,parameters.Wv);            
@@ -119,11 +126,11 @@ end
     """
 
 function stop_criteria_ctaea(
-    status::State,
+    status,
     parameters::CTAEA,
-    problem::Metaheuristics.AbstractProblem,
-    information::Information,
-    options::Options,
+    problem,
+    information,
+    options,
     args...;
     kargs...
     )
@@ -131,12 +138,12 @@ function stop_criteria_ctaea(
     return status.iteration > options.iterations
 end
 
-function final_stage!(
+function Metaheuristics.final_stage!(
     status,
     parameters::CTAEA,
-    problem::Metaheuristics.AbstractProblem,
-    information::Information,
-    options::Options,
+    problem,
+    information,
+    options,
     args...;
     kargs...
 )
