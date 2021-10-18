@@ -21,6 +21,7 @@ function main()
     
     #Dimensions
     D = conf[:n]
+    
     # objectives
     M = conf[:fn]
 

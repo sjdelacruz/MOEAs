@@ -2,28 +2,98 @@ using Distances
 using Metaheuristics
 
 
-function UpdateDA(CA,Q,W,N)
+function UpdateCA(CA,Q,W)
 
     # Initial structures
-    S=[]
-    Sc = []
-    i=1
-    Hc = vcat(CA,Q)
-    N=size(W,1)
+    
+    #Output
+    S=[] 
 
     #Feasible solutions
-    Sc = sum_violations.(Hc) .== 0
+    Sc = [] 
 
-    #Number of feasible solutions
-    feasibles = size(Sx,1)
+    #Number of solutions (at the beginning is the initial population)
+    N=size(Q,1)
 
-    """if feasibles == N
+
+    i=1
+    Hc = vcat(CA,Q)
+
+
+    #Feasible solutions 
+    Sc = filter((x) -> x.is_feasible == true, Hc)
+
+    #Number of feasible solutions   
+    feasibles = size(Sc,1)
+    
+    if feasibles == N
         CA = Sc
-    elseif feasibles == N
-
-        #Non dominated sorting
+    elseif feasibles >= N
+        
+        #Non dominated sorting to Sc
         Metaheuristics.fast_non_dominated_sort!(Sc)
         FrontNO = map(s -> s.rank, Sc)
+
+        #Size of S
+        zpoints = size(S,1)
+
+        while zpoints < N
+            S = append!(S, Si[FrontNO[i].fvals])
+            i = i+1
+            zpoints = size(S,1)
+        end
+
+        if zpoints > N
+
+            #Ideal and nadir points
+            zideal = ideal(S) 
+            znad = nadir(S)
+            
+            #Normalize_points
+            normalize = map((x) ->  (x - zideal)/(znad-zideal), S)
+
+            
+            # association of S and W 
+            Region_CA_ = argmax(1 .- pairwise(cosine_dist, fvals(CA)', W), dims = 2)
+            Region_CA = map(c -> c.I[2], Region_CA_[:,1])
+
+        end
+        CA = S;
+
+
+    else
+
+        #Obtain elements 
+        Si = Hc[Hc .∉ Ref(Sc)]
+
+        #Non dominated sorting
+        Metaheuristics.fast_non_dominated_sort!(Si)
+        FrontNO = map(s -> s.rank, Si)
+
+        #|Sc| < N, Sc U Fi ...N
+        
+        while feasibles < N
+            append!(S, Si[FrontNO[i]])
+            i = i+1
+        end
+
+        #Size of S
+        zpoints = size(S,1)
+        
+        #Number of fronts
+        last = size(FrontNO)
+        
+        #|S| > N
+        while zpoints > N
+            xw = argmax(Si[FrontNO[i-1]])
+            S = S[S .∉ Ref(xw)]    
+        end
+        CA = S
+    end
+
+    """
+
+        
 
         #Fill feasible solutions
         fcounter = size(Sc,1)
@@ -70,26 +140,7 @@ function UpdateDA(CA,Q,W,N)
         CA = S
     else feasibles > N
 
-        #Obtain elements 
-        Si = Hc[(!in).(Hc,Ref(Sc))]
-
-        #Non dominated sorting
-        Metaheuristics.fast_non_dominated_sort!(Si)
-        FrontNO = map(s -> s.rank, Si)
-
-        ndif = size(Sc,1)
-        while ndif < N
-            S = vcat(S,FrontNO[i])
-            i=i+1
-            ndif += size(FrontNO[i],1)
-        end
-
-        elems = size(S,1)
-
-        while elems > N
-            xw = argmax()
-        end
-
+        
     end
     """
 end
