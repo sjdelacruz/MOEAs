@@ -64,7 +64,7 @@ function Metaheuristics.update_state!(
 
     #Updating archives
     #At the beginning CA is empty
-    CA=UpdateCA([],population,weights);
+    CA=UpdateCA([],population,weights,N);
     DA=UpdateDA(CA,[],population,weights); 
 
 
