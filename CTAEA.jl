@@ -1,6 +1,7 @@
 using Metaheuristics
 include("update-da.jl")
 include("UpdateCA.jl")
+
 mutable struct CTAEA <: Metaheuristics.AbstractParameters
     nobjectives::Int
     N::Int #individuos
@@ -64,7 +65,7 @@ function Metaheuristics.update_state!(
 
     #Updating archives
     #At the beginning CA is empty
-    CA=UpdateCA([],population,weights,N);
+    CA=UpdateCA(empty(population),population,weights,N);
     DA=UpdateDA(CA,[],population,weights); 
 
 

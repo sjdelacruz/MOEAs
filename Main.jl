@@ -32,7 +32,7 @@ function main()
     options = Options(f_calls_limit = 9000*10, debug=false)
 
     # reference points (Das and Dennis's method)
-    weights = gen_ref_dirs(M, 10)
+    weights = gen_ref_dirs(M, 100)
 
     # algoritmo a utilizar
     algorithm = CTAEA(weights, options = options)
