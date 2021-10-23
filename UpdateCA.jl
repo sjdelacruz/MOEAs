@@ -53,7 +53,7 @@ function UpdateCA(CA,Q,W_,N)
             znad = nadir(SPopObj)
             
             # Normalize_points
-            SPopObj = ((SPopObj - zideal) ./ (znad - zideal))
+            SPopObj = ((SPopObj .- zideal') ./ (znad - zideal)')
 
             # association of S and W 
             Region_S_ = argmax(1 .- pairwise(cosine_dist, SPopObj', W), dims = 2)
@@ -68,12 +68,14 @@ function UpdateCA(CA,Q,W_,N)
             # countmap(Region_S)
             
             #Count the subregions with more indiviudals
-            most_crowded=filter(r -> r = flag,Region_S)
-            
+            #most_crowded=filter(r -> r == flag, Region_S)
+            most_crowded = argmax(counters)
+                        
             #S_crowdest is the set of individuals from the most crowded subregion
-            S_crowdest = map(x -> x.rank == Region_S[most_crowded]) 
+            S_crowdest = S[Regions .== most_crowded] # map(x -> x.rank .== Region_S[most_crowded]) 
+            #S_crowdest=S(Region==most_crowded);                 % S_crowdest is the set of individuals from the most crowded subregion
 
-            dist = pairwise(Euclidean, fvals(S_crowdest)',fvals(S_crowdest)');                     
+            dist = pairwise(Euclidean(), fvals(S_crowdest)',fvals(S_crowdest)', dims=2)[:,1]
             dist[dist .== 0] .= Inf
             # dist = map(x->  x == 0 ? Inf : x , dist)
 
@@ -88,10 +90,11 @@ function UpdateCA(CA,Q,W_,N)
             
             Z = ideal(fvals(St))
     
-            g_tch = maximum(abs.(fvals(St) .- zideal)' ./ W[:, Region_St], dims = 2)[:,1]
+            g_tch = maximum(abs.(fvals(St) .- zideal')' ./ W[:, Region_St], dims = 2)[:,1]
             order = argmax(g_tch)
             x_worst=St[order]
-            S = setdiff(S, x_worst) # S[S .∉ Ref(x_worst)]   
+            S = setdiff(S, [x_worst]) 
+            # S = S[S .∉ Ref(x_worst)]   
         end
         # CA = S
         return CA

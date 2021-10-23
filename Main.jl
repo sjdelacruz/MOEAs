@@ -27,7 +27,7 @@ function main()
     xmin, xmax = conf[:xmin],conf[:xmax]
     bounds = [xmin xmax]
 
-    options = Options(f_calls_limit = 9000*10, debug=true)
+    options = Options(f_calls_limit = 9000*10, debug=false)
 
     # reference points (Das and Dennis's method)
     weights = gen_ref_dirs(M, 100)
@@ -37,6 +37,7 @@ function main()
 
     # Start optimization process
     resultado = optimize(f, bounds, algorithm)
+    fvals(resultado)
 
 end
 

@@ -135,8 +135,8 @@ function Metaheuristics.update_state!(
         push!(Q, offspring)
     end
 
-    parameters.CA = UpdateCA(parameters.CA, population, weights, N)
-    parameters.DA = UpdateDA(parameters.CA, parameters.DA, population, weights)
+    parameters.CA = UpdateCA(parameters.CA, Q, weights, N)
+    parameters.DA = UpdateDA(parameters.CA, parameters.DA, Q, weights)
 
 
     #status.stop = true
