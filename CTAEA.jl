@@ -1,5 +1,5 @@
 using Metaheuristics
-include("update-da.jl")
+include("UpdateDA.jl")
 include("UpdateCA.jl")
 
 mutable struct CTAEA <: Metaheuristics.AbstractParameters
@@ -62,12 +62,10 @@ function Metaheuristics.update_state!(
     population = status.population
     weights = parameters.weights
 
-
     #Updating archives
     #At the beginning CA is empty
-    CA=UpdateCA(empty(population),population,weights,N);
-    DA=UpdateDA(CA,[],population,weights); 
-
+    CA = UpdateCA(empty(population), population, weights, N);
+    # DA = UpdateDA(CA, empty(population), population, weights); 
 
 
     # remove following lines when this function works correctly

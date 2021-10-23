@@ -1,4 +1,3 @@
-
 using Distances
 using Metaheuristics
 
@@ -15,9 +14,8 @@ include("CTAEA.jl")
 function main()
     
     #Objective function and a set of parameters
-    f, conf = get_RW_MOP_problem(1)
-    fx, gx, hx = f(conf[:xmin])
-    vio = sum(max.(0.0, gx .<= 0)) + sum(max.(0.0, abs.(hx) .- 1e-2 .<= 0))
+    f, conf = get_RW_MOP_problem(2)
+
     
     #Dimensions
     D = conf[:n]

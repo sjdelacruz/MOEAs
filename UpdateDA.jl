@@ -1,4 +1,3 @@
-#
 using Metaheuristics
 using Distances
 # DA=UpdateDA(CA,[],status.population,parameters.Wv);
@@ -64,6 +63,7 @@ function UpdateDA(CA,DA,Q,W_)
 
 
                     mask = findall(s -> s === x_best, Hd[current_d])
+                    deleteat!(Hd, mask)
 
                     if !isempty(Hd)
                         Region_Hd_ = argmax(1 .-pairwise(cosine_dist, fvals(Hd)',W), dims =2)
