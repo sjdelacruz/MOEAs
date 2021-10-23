@@ -62,7 +62,7 @@ function UpdateDA(CA,DA,Q,W_)
                     x_best=O[order]
 
 
-                    mask = findall(s -> s === x_best, Hd[current_d])
+                    mask = findall(s -> s === x_best, Hd)
                     deleteat!(Hd, mask)
 
                     if !isempty(Hd)

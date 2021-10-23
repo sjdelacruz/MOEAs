@@ -139,6 +139,11 @@ function Metaheuristics.update_state!(
     parameters.DA = UpdateDA(parameters.CA, parameters.DA, Q, weights)
 
 
+    # remove solutions with NAN or Inf values
+    status.population = parameters.CA
+    mask = map(s -> any(.!isfinite.(fval(s)) .| isnan.(fval(s))), status.population)
+    status.population = status.population[.!mask]
+
     #status.stop = true
 end
     
@@ -166,5 +171,6 @@ function Metaheuristics.final_stage!(
     args...;
     kargs...
 )
+    
     status.final_time = time()
 end

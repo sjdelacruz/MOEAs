@@ -37,7 +37,7 @@ function UpdateCA(CA,Q,W_,N)
         nfront = length(FrontNO)
 
         #Fill S with fronts i=1 ... nfront
-        for i in  range(1, length= nfront)
+        for i in 1:nfront 
             fp = filter(s -> s.rank == FrontNO[i], Sc)
             S = append!(S, fp)
             if length(S) >= N
@@ -90,13 +90,15 @@ function UpdateCA(CA,Q,W_,N)
             
             Z = ideal(fvals(St))
     
-            g_tch = maximum(abs.(fvals(St) .- zideal')' ./ W[:, Region_St], dims = 2)[:,1]
+            g_tch = maximum(abs.(fvals(St) .- zideal') ./ W[:, Region_St]', dims = 2)[:,1]
             order = argmax(g_tch)
             x_worst=St[order]
-            S = setdiff(S, [x_worst]) 
+            i_worst = findfirst(s -> s === x_worst, S)
+            deleteat!(S, i_worst)
+            #S = setdiff(S, [x_worst]) 
             # S = S[S .∉ Ref(x_worst)]   
         end
-        # CA = S
+        CA = S
         return CA
 
 

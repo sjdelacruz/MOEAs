@@ -14,7 +14,7 @@ include("CTAEA.jl")
 function main()
     
     #Objective function and a set of parameters
-    f, conf = get_RW_MOP_problem(2)
+    f, conf = get_RW_MOP_problem(3)
 
     
     #Dimensions
@@ -33,11 +33,11 @@ function main()
     weights = gen_ref_dirs(M, 100)
 
     # algoritmo a utilizar
-    algorithm = CTAEA(weights, options = options)
+    algorithm = CTAEA(N = 100, weights, options = options)
 
     # Start optimization process
     resultado = optimize(f, bounds, algorithm)
-    fvals(resultado)
+    #fvals(resultado)
 
 end
 
