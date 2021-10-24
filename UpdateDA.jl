@@ -1,4 +1,3 @@
-#
 using Metaheuristics
 using Distances
 # DA=UpdateDA(CA,[],status.population,parameters.Wv);
@@ -53,7 +52,7 @@ function UpdateDA(CA,DA,Q,W_)
 
                     #O is the set of nondominated solutions from region(i) in Hd
                     O=Hd[current_d[FrontNO .==1]];            
-                    Z = ideal(O)
+                    Z = ideal(fvals(O))
 
                     Region_O_ = argmax(1 .-pairwise(cosine_dist, fvals(O)',W), dims = 2)
                     Region_O = map(c -> c.I[2], Region_O_[:,1])
@@ -63,7 +62,8 @@ function UpdateDA(CA,DA,Q,W_)
                     x_best=O[order]
 
 
-                    mask = findall(s -> s === x_best, Hd[current_d])
+                    mask = findall(s -> s === x_best, Hd)
+                    deleteat!(Hd, mask)
 
                     if !isempty(Hd)
                         Region_Hd_ = argmax(1 .-pairwise(cosine_dist, fvals(Hd)',W), dims =2)
