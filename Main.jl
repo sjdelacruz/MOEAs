@@ -1,14 +1,21 @@
-using Distances
-using Metaheuristics
-using Plots;pyplot()
-
 try
     using HardTestProblems
 catch
     # Install module
     import Pkg; Pkg.add("HardTestProblems")
+    
 end
+
+import Pkg;
+Pkg.rm("Metaheuristics")
+Pkg.add(url="https://github.com/jmejia8/Metaheuristics.jl.git#develop")
+Pkg.add("Plots")
+Pkg.add("PyPlot")
+
+using Distances
+using Plots;pyplot()
 using HardTestProblems
+using Metaheuristics
 
 include("CTAEA.jl")
 
