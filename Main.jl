@@ -71,7 +71,6 @@ function main()
     wireframe(fs[:,1], fs[:,2], fs[:,3])
     fs = fvals(resultado)
     scatter!(fs[:,1], fs[:,2], fs[:,3])
-    #fvals(resultado)
 end
 
 
