@@ -5,6 +5,7 @@ include("crowding-distance.jl")
 mutable struct CCMO_NSGAII <: Metaheuristics.AbstractParameters
     fhelper::Metaheuristics.AbstractProblem
     M::Int
+    D::Int
     N::Int
     η_cr::Float64
     p_cr::Float64
@@ -14,7 +15,7 @@ mutable struct CCMO_NSGAII <: Metaheuristics.AbstractParameters
 
 end
 
-function CCMO_NSGAII(M,fhelper_;N = 100,
+function CCMO_NSGAII(M,D,fhelper_;N = 100,
     η_cr = 20,
     p_cr = 0.9,
     η_m = 20,
@@ -22,9 +23,10 @@ function CCMO_NSGAII(M,fhelper_;N = 100,
     information = Information(),
     options = Options(),)
 
-    fhelper = Problem(fhelper_[1], Array(fhelper_[2]))
+    bounds = Array(fhelper_[2])
+    fhelper = Problem(fhelper_[1], bounds[:,1:D])
 
-    parameters = CCMO_NSGAII(fhelper,M,N, η_cr, p_cr, η_m, p_m, [])
+    parameters = CCMO_NSGAII(fhelper,M,D,N, η_cr, p_cr, η_m, p_m, [])
 
     alg = Metaheuristics.Algorithm(
         parameters,

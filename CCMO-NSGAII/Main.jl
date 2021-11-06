@@ -5,13 +5,6 @@
 
 try
     using HardTestProblems
-    using Distances
-    using Plots
-    pyplot()
-    using HardTestProblems
-    using Metaheuristics
-    
-
 catch
     import Pkg; Pkg.add("HardTestProblems")    
     Pkg.rm("Metaheuristics")
@@ -20,23 +13,38 @@ catch
     Pkg.add("PyPlot")
 end
 
+using Distances
+using Plots
+pyplot()
+using HardTestProblems
+using Metaheuristics
+using Statistics
+
 include("CCMO_NSGAII.jl")
 
 function main() 
 
     M=3;
+    D=7
     f, bounds, front = Metaheuristics.TestProblems.C1_DTLZ3(M)
+    bounds = bounds[:,1:D]
+    
     fhelper = Metaheuristics.TestProblems.DTLZ3(M)
-    display(front)
     #plt3d= Plots.plot(fs[:,1],fs[:,2], fs[:,3], seriestype=:scatter, markersize = 7,title = "Pareto Front")
     #savefig("Pf.png")
 
-    options = Options(f_calls_limit=100000, debug=false)
-    algorithm = CCMO_NSGAII(M,fhelper,N = 105, p_cr = 0.85, options = options)
+    igd_values = []
 
-    # Start optimization process
-    resultado = optimize(f, bounds, algorithm)
-    display(resultado)
+    for i in 1:30
+        options = Options(f_calls_limit=100000, debug=false)
+        algorithm = CCMO_NSGAII(M,D,fhelper, N = 105, p_cr = 1.0, p_m= (1.0/D), options = options)
+        resultado = Metaheuristics.optimize(f, bounds, algorithm)
+        igd_local = Metaheuristics.PerformanceIndicators.igd(resultado,front)
+        push!(igd_values, igd_local)
+    end
+
+    igd_mean = mean(igd_values)
+    println("#Mean IGD: ", igd_mean)
 end
 
 main()
