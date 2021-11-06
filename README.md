@@ -1,2 +1,2 @@
 # MOEAs
-Code of some MoEAs in Julia, collaboration with Jesus-Mejía
+Some codes of MoEAs in Julia, collaboration with Jesus-Mejía
