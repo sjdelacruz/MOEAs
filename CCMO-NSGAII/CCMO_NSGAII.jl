@@ -1,38 +1,34 @@
 using Metaheuristics
 using Random
-include("crowding-distance.jl")
 
-mutable struct CCMO_NSGAII <: Metaheuristics.AbstractParameters
-    fhelper::Metaheuristics.AbstractProblem
-    M::Int
-    D::Int
+mutable struct CCMO_NSGAII <: Metaheuristics.AbstractNSGA
     N::Int
     η_cr::Float64
     p_cr::Float64
     η_m::Float64
     p_m::Float64
+    # helper population
     phelper::Vector{Metaheuristics.xFgh_indiv}
 
 end
 
-function CCMO_NSGAII(M,D,fhelper_;N = 100,
-    η_cr = 20,
-    p_cr = 0.9,
-    η_m = 20,
-    p_m = -1,
-    information = Information(),
-    options = Options(),)
+function CCMO_NSGAII(;
+        N = 100,
+        η_cr = 20,
+        p_cr = 0.9,
+        η_m = 20,
+        p_m = -1,
+        information = Information(),
+        options = Options(),
+    )
 
-    bounds = Array(fhelper_[2])
-    fhelper = Problem(fhelper_[1], bounds[:,1:D])
-
-    parameters = CCMO_NSGAII(fhelper,M,D,N, η_cr, p_cr, η_m, p_m, [])
+    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [])
 
     alg = Metaheuristics.Algorithm(
-        parameters,
-        information = information,
-        options = options,)
-    
+                                   parameters,
+                                   information = information,
+                                   options = options,)
+
     alg
 end
 
@@ -64,17 +60,17 @@ function Metaheuristics.initialize!(
     
 
     #Generating population based on the helper problem (problem without constraints)
-    parameters.phelper = Metaheuristics.generate_population(parameters.N, parameters.fhelper,ε=options.h_tol)
+    parameters.phelper = Metaheuristics.generate_population(parameters.N, problem,ε=options.h_tol)
 
     status
 end
 
 function Metaheuristics.update_state!(
-    status,
+    status::State,
     parameters::CCMO_NSGAII,
-    problem,
-    information,
-    options,
+    problem::Metaheuristics.AbstractProblem,
+    information::Information,
+    options::Options,
     args...;
     kargs...)
 
@@ -99,7 +95,7 @@ function Metaheuristics.update_state!(
         #Select two solutions for the first subset and generate offspring
         p1a = Metaheuristics.tournament_selection(status.population, I[i])
         p1b = Metaheuristics.tournament_selection(status.population, J[i])
-        p1_offspring1, p1_offspring2 = reproduction(p1a, p1b, parameters, problem)
+        p1_offspring1, p1_offspring2 = Metaheuristics.reproduction(p1a, p1b, parameters, problem)
        
         # save offsprings of forigin
         push!(Off1, p1_offspring1, p1_offspring2)
@@ -107,40 +103,29 @@ function Metaheuristics.update_state!(
         #Select two solutions for the second subset and generate offspring
         pc = Metaheuristics.tournament_selection(phelper, K[i])
         pd = Metaheuristics.tournament_selection(phelper, L[i])
-        p2_offspring1, p2_offspring2 = reproduction(pc, pd, parameters, parameters.fhelper)
+        p2_offspring1, p2_offspring2 = Metaheuristics.reproduction(pc, pd, parameters, problem)
        
         # save offsprings of forigin
         push!(Off2, p2_offspring1, p2_offspring2)
     end
 
-    #Weak cooperation
-    status.population = vcat(status.population, Off1,Off2)
-    parameters.phelper = vcat(phelper,Off1,Off2)
+    # Weak cooperation
+    status.population = vcat(status.population, Off1, Off2)
+    # copy Off1 and Off2 (copy objects not pointers)
+    parameters.phelper = vcat(phelper, deepcopy(Off1), deepcopy(Off2))
     
     #Updating
     environmental_selection!(status.population, parameters)
-    environmental_selection!(parameters.phelper, parameters)
+    environmental_selection!(parameters.phelper, parameters, false)
 end
-    
-function stop_criteria_ctaea(
-    status,
-    parameters::CCMO_NSGAII,
-    problem,
-    information,
-    options,
-    args...;
-    kargs...
-    )
 
-    return status.iteration > options.iterations
-end
 
 function Metaheuristics.final_stage!(
-    status,
+    status::State,
     parameters::CCMO_NSGAII,
-    problem,
-    information,
-    options,
+    problem::Metaheuristics.AbstractProblem,
+    information::Information,
+    options::Options,
     args...;
     kargs...
 )
@@ -148,21 +133,28 @@ function Metaheuristics.final_stage!(
     status.final_time = time()
 end
 
-function reproduction(pa, pb, parameters::CCMO_NSGAII, problem)
+
+function environmental_selection!(population, parameters::CCMO_NSGAII, consider_constrints=true)
+    if consider_constrints
+        # using constrained non-dominated sorting here
+        Metaheuristics.truncate_population!(population, parameters.N)
+        return
+    end
+
+    # using non-dominated (without constraints)
+    CV = [s.sum_violations for s in parameters.phelper]
+    # putting CV = 0 to ingnore constraints in helper population
+    for s in parameters.phelper
+        s.sum_violations = 0
+    end
+
+    Metaheuristics.truncate_population!(parameters.phelper, parameters.N)
+
+    # restore constraint violation values
+    for (i,s) in enumerate(parameters.phelper)
+        s.sum_violations = CV[i]
+    end
     
-    c1, c2 = Metaheuristics.GA_reproduction(get_position(pa),
-                             get_position(pb),
-                             problem.bounds;
-                             η_cr = parameters.η_cr,
-                             p_cr = parameters.p_cr,
-                             η_m = parameters.η_m,
-                             p_m = parameters.p_m)
-
-    Metaheuristics.create_solution(c1, problem), Metaheuristics.create_solution(c2, problem) 
-end
-
-function environmental_selection!(population, parameters::CCMO_NSGAII)
-    truncate_population!(population, parameters.N)
 end
 
 
