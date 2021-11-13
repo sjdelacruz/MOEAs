@@ -9,6 +9,8 @@ mutable struct CCMO_NSGAII <: Metaheuristics.AbstractNSGA
     p_m::Float64
     # helper population
     phelper::Vector{Metaheuristics.xFgh_indiv}
+    preferences::Vector{Vector{Real}}
+    δ::Vector{Float64}
 
 end
 
@@ -18,11 +20,13 @@ function CCMO_NSGAII(;
         p_cr = 0.9,
         η_m = 20,
         p_m = -1,
+        preferences=[],
+        δ=[],
         information = Information(),
         options = Options(),
     )
 
-    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [])
+    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [],preferences,δ)
 
     alg = Metaheuristics.Algorithm(
                                    parameters,
@@ -135,25 +139,47 @@ end
 
 
 function environmental_selection!(population, parameters::CCMO_NSGAII, consider_constrints=true)
+    d = cosine_dist
+    ws = parameters.preferences
+    δ = parameters.δ
+    spea2 = SPEA2().parameters
+    spea2.N = parameters.N
     if consider_constrints
+        # handling preferences
+        F = fvals(population)
+        fmin = ideal(F)'
+        fmax = nadir(F)'
+        Fnorm = (F .- fmin) ./ (fmax - fmin)
+        for (i,s) in enumerate(population)
+            gg = minimum([d(Fnorm[i,:], w)-δ[j] for (j,w) in enumerate(ws)])
+            s.sum_violations += max(gg, 0)
+            s.is_feasible = s.sum_violations == 0
+        end
+
         # using constrained non-dominated sorting here
-        Metaheuristics.truncate_population!(population, parameters.N)
-        return
+        # Metaheuristics.truncate_population!(population, parameters.N)
+
+        Metaheuristics.environmental_selection!(population,spea2)
+
+    else
+
+        CV = [s.sum_violations for s in parameters.phelper]
+        tmp = copy(parameters.phelper)
+        # using non-dominated (without constraints)
+        # putting CV = 0 to ingnore constraints in helper population
+        for s in parameters.phelper
+            s.sum_violations = 0
+        end
+
+        Metaheuristics.environmental_selection!(parameters.phelper,spea2)
+        #Metaheuristics.truncate_population!(parameters.phelper, parameters.N)
+        # restore constraint violation values
+        for (i,s) in enumerate(tmp)
+            s.sum_violations = CV[i]
+        end
     end
 
-    # using non-dominated (without constraints)
-    CV = [s.sum_violations for s in parameters.phelper]
-    # putting CV = 0 to ingnore constraints in helper population
-    for s in parameters.phelper
-        s.sum_violations = 0
-    end
 
-    Metaheuristics.truncate_population!(parameters.phelper, parameters.N)
-
-    # restore constraint violation values
-    for (i,s) in enumerate(parameters.phelper)
-        s.sum_violations = CV[i]
-    end
     
 end
 
