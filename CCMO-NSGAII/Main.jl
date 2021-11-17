@@ -25,7 +25,7 @@ include("CCMO_NSGAII.jl")
 
 function test_preferences()
     M = 3
-    f, bounds, front = Metaheuristics.TestProblems.DTLZ1(M);
+    f, bounds, front = Metaheuristics.TestProblems.C2_DTLZ2(M);
     D = size(bounds,2)
 
     # preferences defined as weights

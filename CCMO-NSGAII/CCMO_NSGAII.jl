@@ -11,6 +11,8 @@ mutable struct CCMO_NSGAII <: Metaheuristics.AbstractNSGA
     phelper::Vector{Metaheuristics.xFgh_indiv}
     preferences::Vector{Vector{Real}}
     δ::Vector{Float64}
+    fitness::Vector{Float64}
+    fitness_helper::Vector{Float64}
 
 end
 
@@ -26,7 +28,7 @@ function CCMO_NSGAII(;
         options = Options(),
     )
 
-    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [],preferences,δ)
+    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [],preferences,δ,[],[])
 
     alg = Metaheuristics.Algorithm(
                                    parameters,
@@ -66,6 +68,10 @@ function Metaheuristics.initialize!(
     #Generating population based on the helper problem (problem without constraints)
     parameters.phelper = Metaheuristics.generate_population(parameters.N, problem,ε=options.h_tol)
 
+    # used to compute fitness
+    environmental_selection!(status.population, parameters)
+    environmental_selection!(parameters.phelper, parameters, false)
+
     status
 end
 
@@ -79,16 +85,11 @@ function Metaheuristics.update_state!(
     kargs...)
 
     phelper = parameters.phelper
+    fitness1 = parameters.fitness
+    fitness2 = parameters.fitness_helper
     N = parameters.N
     middle = floor(Int, N/2)
 
-    #For the first subset
-    I = randperm(N)[1:middle]
-    J = randperm(N)[1:middle]
-
-    #For the second subset
-    K = randperm(N)[1:middle]
-    L = randperm(N)[1:middle]
 
     #Structure to save offspring
     Off1 = empty(status.population)
@@ -97,16 +98,16 @@ function Metaheuristics.update_state!(
     for i = 1:2:middle
 
         #Select two solutions for the first subset and generate offspring
-        p1a = Metaheuristics.tournament_selection(status.population, I[i])
-        p1b = Metaheuristics.tournament_selection(status.population, J[i])
+        p1a = Metaheuristics.binary_tournament(status.population, fitness1)
+        p1b = Metaheuristics.binary_tournament(status.population, fitness1)
         p1_offspring1, p1_offspring2 = Metaheuristics.reproduction(p1a, p1b, parameters, problem)
        
         # save offsprings of forigin
         push!(Off1, p1_offspring1, p1_offspring2)
 
         #Select two solutions for the second subset and generate offspring
-        pc = Metaheuristics.tournament_selection(phelper, K[i])
-        pd = Metaheuristics.tournament_selection(phelper, L[i])
+        pc = Metaheuristics.binary_tournament(phelper, fitness2)
+        pd = Metaheuristics.binary_tournament(phelper, fitness2)
         p2_offspring1, p2_offspring2 = Metaheuristics.reproduction(pc, pd, parameters, problem)
        
         # save offsprings of forigin
@@ -145,6 +146,8 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
     spea2 = SPEA2().parameters
     spea2.N = parameters.N
     if consider_constrints
+        tmp = copy(population)
+        CV = [s.sum_violations for s in population]
         # handling preferences
         F = fvals(population)
         fmin = ideal(F)'
@@ -160,6 +163,11 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
         # Metaheuristics.truncate_population!(population, parameters.N)
 
         Metaheuristics.environmental_selection!(population,spea2)
+        parameters.fitness = spea2.fitness
+        for (i,s) in enumerate(tmp)
+            s.sum_violations = CV[i]
+            s.is_feasible = CV[i] == 0
+        end
 
     else
 
@@ -177,6 +185,7 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
         for (i,s) in enumerate(tmp)
             s.sum_violations = CV[i]
         end
+        parameters.fitness_helper = spea2.fitness
     end
 
 
