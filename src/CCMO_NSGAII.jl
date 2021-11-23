@@ -153,7 +153,7 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
         F = fvals(population)
         fmin = ideal(F)'
         fmax = nadir(F)'
-        Fnorm = (F .- fmin) ./ (fmax - fmin)
+        Fnorm = F#(F .- fmin) ./ (fmax - fmin)
         for (i,s) in enumerate(population)
             gg = minimum([d(Fnorm[i,:], w)-δ[j] for (j,w) in enumerate(ws)])
             s.sum_violations += max(gg, 0)
@@ -165,10 +165,12 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
 
         Metaheuristics.environmental_selection!(population,spea2)
         parameters.fitness = spea2.fitness
+        #=
         for (i,s) in enumerate(tmp)
             s.sum_violations = CV[i]
             s.is_feasible = CV[i] == 0
         end
+        =#
 
     else
 
