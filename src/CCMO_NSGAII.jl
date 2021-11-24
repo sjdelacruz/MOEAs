@@ -147,15 +147,24 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
     spea2 = SPEA2().parameters
     spea2.N = parameters.N
     if consider_constrints
+        if count(Metaheuristics.is_feasible.(population)) < parameters.N ÷ 2
+            Metaheuristics.environmental_selection!(population,spea2)
+            parameters.fitness = spea2.fitness
+            return
+        end
+        
         tmp = copy(population)
         CV = [s.sum_violations for s in population]
         # handling preferences
-        F = fvals(population)
-        fmin = ideal(F)'
-        fmax = nadir(F)'
-        Fnorm = F#(F .- fmin) ./ (fmax - fmin)
+        fmin = ideal(population)
+        fmax = nadir(population)
         for (i,s) in enumerate(population)
-            gg = minimum([d(Fnorm[i,:], w)-δ[j] for (j,w) in enumerate(ws)])
+            if !s.is_feasible
+                continue
+            end
+            
+            Fnorm = (Metaheuristics.fval(s) .- fmin) ./ (fmax - fmin)
+            gg = minimum([d(Fnorm, w)-δ[j] for (j,w) in enumerate(ws)])
             s.sum_violations += max(gg, 0)
             s.is_feasible = s.sum_violations == 0
         end
@@ -165,12 +174,10 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
 
         Metaheuristics.environmental_selection!(population,spea2)
         parameters.fitness = spea2.fitness
-        #=
         for (i,s) in enumerate(tmp)
             s.sum_violations = CV[i]
             s.is_feasible = CV[i] == 0
         end
-        =#
 
     else
 
