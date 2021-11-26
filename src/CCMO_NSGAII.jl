@@ -1,7 +1,3 @@
-using Metaheuristics
-using Distances
-using Random
-
 mutable struct CCMO_NSGAII <: Metaheuristics.AbstractNSGA
     N::Int
     η_cr::Float64
@@ -10,8 +6,8 @@ mutable struct CCMO_NSGAII <: Metaheuristics.AbstractNSGA
     p_m::Float64
     # helper population
     phelper::Vector{Metaheuristics.xFgh_indiv}
-    preferences::Vector{Vector{Real}}
-    δ::Vector{Float64}
+    # preferences::Vector{Vector{Real}}
+    # δ::Vector{Float64}
     fitness::Vector{Float64}
     fitness_helper::Vector{Float64}
 
@@ -23,13 +19,13 @@ function CCMO_NSGAII(;
         p_cr = 0.9,
         η_m = 20,
         p_m = -1,
-        preferences=[],
-        δ=[],
+        # preferences=[],
+        # δ=[],
         information = Information(),
         options = Options(),
     )
 
-    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [],preferences,δ,[],[])
+    parameters = CCMO_NSGAII(N, η_cr, p_cr, η_m, p_m, [],[],[])
 
     alg = Metaheuristics.Algorithm(
                                    parameters,
@@ -141,44 +137,11 @@ end
 
 
 function environmental_selection!(population, parameters::CCMO_NSGAII, consider_constrints=true)
-    d = cosine_dist
-    ws = parameters.preferences
-    δ = parameters.δ
     spea2 = SPEA2().parameters
     spea2.N = parameters.N
     if consider_constrints
-        if count(Metaheuristics.is_feasible.(population)) < parameters.N ÷ 2
-            Metaheuristics.environmental_selection!(population,spea2)
-            parameters.fitness = spea2.fitness
-            return
-        end
-        
-        tmp = copy(population)
-        CV = [s.sum_violations for s in population]
-        # handling preferences
-        fmin = ideal(population)
-        fmax = nadir(population)
-        for (i,s) in enumerate(population)
-            if !s.is_feasible
-                continue
-            end
-            
-            Fnorm = (Metaheuristics.fval(s) .- fmin) ./ (fmax - fmin)
-            gg = minimum([d(Fnorm, w)-δ[j] for (j,w) in enumerate(ws)])
-            s.sum_violations += max(gg, 0)
-            s.is_feasible = s.sum_violations == 0
-        end
-
-        # using constrained non-dominated sorting here
-        # Metaheuristics.truncate_population!(population, parameters.N)
-
         Metaheuristics.environmental_selection!(population,spea2)
         parameters.fitness = spea2.fitness
-        for (i,s) in enumerate(tmp)
-            s.sum_violations = CV[i]
-            s.is_feasible = CV[i] == 0
-        end
-
     else
 
         CV = [s.sum_violations for s in parameters.phelper]
@@ -197,7 +160,6 @@ function environmental_selection!(population, parameters::CCMO_NSGAII, consider_
         end
         parameters.fitness_helper = spea2.fitness
     end
-
 
     
 end
