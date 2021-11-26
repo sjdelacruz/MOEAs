@@ -3,7 +3,7 @@ using DrWatson
 using Metaheuristics
 using HardTestProblems
 using LinearAlgebra
-using Plots; plotly()
+using Plots; gr()
 
 include("../src/MOEAs.jl")
 
@@ -36,49 +36,72 @@ function get_problem(problem_idx, problem_type)
         f, bounds, front = Metaheuristics.TestProblems.get_problem(problem)
     elseif problem_type ==:application
 
-        preferences = [ [0.1, 0.9], [0.5, 0.5], [0.8, 0.2] ]
-        δ = fill(0.005, length(preferences))
+        weight_points = Vector{Float64}[
+                       #[0.1, 0.9],
+                       #[0.5, 0.5],
+                       # [0.8, 0.2]
+                      ]
+        ref_points = Vector{Float64}[
+                      [-0.032, 260]
+                     ]
+        δ_w = fill(0.1, length(weight_points))
+        δ_r = fill(0.01, length(ref_points))
         rw_problems = [
                        "pressure_vessel",
                        "vibrating_platform",
                        "two_bar_Truss_design_problems",
                        "weldan_beam_design"
                       ]
-        # f, conf =  get_RW_MOP_problem(rw_problems[problem_idx]);
-        # bounds = Array([conf[:xmin] conf[:xmax]]')
-        f, bounds, _ = Metaheuristics.TestProblems.get_problem(:ZDT1)
+        f, conf =  get_RW_MOP_problem(rw_problems[problem_idx]);
+        bounds = Array([conf[:xmin] conf[:xmax]]')
+        # f, bounds, _ = Metaheuristics.TestProblems.get_problem(:ZDT3)
         front = []
     end
 
-    f, bounds, front, preferences, δ
+    f, bounds, front, weight_points, δ_w, ref_points, δ_r
 end
 
-function plot_res(res, preferences)
-    p = plot(xlabel="f₁", ylabel="f₂", zlabel="f₃")
-    fs = fvals(res)
-    # normalize
-    z_ideal = ideal(fs)'
-    z_nad = nadir(fs)'
-    #fs = (fs .- z_ideal) ./ (z_nad .- z_ideal)
-    M = size(fs, 2)
-    scatter!((fs[:,i] for i in 1:M)..., label="Result")
+function plot_res(archive, population, weight_points, ref_points)
+    M = length(Metaheuristics.fval(population[1]))
+    p = plot(xlabel="f₁", ylabel="f₂", zlabel="f₃", dpi=200)
 
-    for (i,w) in enumerate(preferences)
+    # plot ref directions
+    z_ideal = ideal(population)
+    z_nad = nadir(population)
+    for (i,w) in enumerate(weight_points)
         t = range(0,1, length=50)
-        # ww =  w .* (z_nad - z_ideal)# / norm(w)
-        ww =  w # / norm(w)
-        #line = z_ideal' .+ t.*ww'
-        line = t.*ww'
-        plot!((line[:,i] for i in 1:M)..., label="Preference $i", color=:blue, lw=2)
+        # scale to axis
+        ww =  w .* (z_nad - z_ideal)
+        line = z_ideal' .+ t.*ww'
+
+        plot!((line[:,i] for i in 1:M)..., label="", color=:gray, lw=2)
     end
+
+
+    for r in ref_points
+        scatter!(r[1:1], r[2:2], markercolor=:red, label="")
+    end
+
+    # population
+    fs = fvals(population)
+    scatter!((fs[:,i] for i in 1:M)..., label="Approx. Front", markercolor=:lightgray, markerstrokewidth=0)
+
+    fs = fvals(archive)
+    n = length(archive)
+    scatter!((fs[:,i] for i in 1:M)..., label="Prefered solutions ($n)", markercolor=:black)
+    savefig(p, "fig.png")
+
+
     p
 end
 
 function get_ccmo_parms(d) 
-    f, bounds, front, preferences, δ = get_problem(d[:fnum], d[:benchmark])
+
+    f, bounds, front, weight_points, δ_w, ref_points, δ_r = get_problem(d[:fnum], d[:benchmark])
     options = Options(f_calls_limit=d[:fcalls],iterations=2d[:fcalls]*d[:N], seed=d[:seed], debug=false)
 
-    algorithm = MOEAs.CCMO_NSGAII(;N = d[:N], options = options, preferences,δ)
+    algorithm_ = MOEAs.CCMO_NSGAII(;N = d[:N], options = options)
+    algorithm = MOEAs.ROIs(algorithm_; weight_points, δ_w, ref_points, δ_r)
     algorithm, f, bounds
 end
 
@@ -99,7 +122,8 @@ function main()
     algorithm, f, bounds = get_ccmo_parms(d)
     res = run_algorithm(algorithm, f, bounds)
     display(res)
-    plot_res(res, algorithm.parameters.preferences)
+    display(algorithm.parameters.archive)
+    plot_res(algorithm.parameters.archive, res.population, algorithm.parameters.weight_points,algorithm.parameters.ref_points)
 end
 
 main()

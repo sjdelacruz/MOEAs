@@ -19,6 +19,10 @@ function ROIs(algorithm = CCMO_NSGAII();
     length(ref_points) != length(δ_r) && error("|ref_points| is different to |δ_r|")
     length(weight_points) != length(δ_w) && error("|weight_points| is different to |δ_w|")
 
+
+    δ_w = 1 .- cos.(π/2*δ_w)
+
+
     parameters = ROIs(algorithm.parameters, weight_points, ref_points, δ_r, δ_w, Metaheuristics.xFgh_indiv[],max_archive_size)
 
 
@@ -36,7 +40,7 @@ function Metaheuristics.initialize!(
 
     st = Metaheuristics.initialize!(status, parameters.parameters,args...;kargs...)
     if parameters.max_archive_size == 0
-        parameters.max_archive_size = 2parameters.parameters.N
+        parameters.max_archive_size = parameters.parameters.N
     end
 
     st
