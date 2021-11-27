@@ -37,12 +37,12 @@ function get_problem(problem_idx, problem_type)
     elseif problem_type ==:application
 
         weight_points = Vector{Float64}[
-                       #[0.1, 0.9],
-                       #[0.5, 0.5],
-                       # [0.8, 0.2]
-                      ]
+                                        [0.1, 0.9],
+                                        [0.5, 0.5],
+                                        [0.8, 0.2]
+                                       ]
         ref_points = Vector{Float64}[
-                      [-0.032, 260]
+                      # [-0.032, 260]
                      ]
         δ_w = fill(0.1, length(weight_points))
         δ_r = fill(0.01, length(ref_points))
@@ -87,8 +87,7 @@ function plot_res(archive, population, weight_points, ref_points)
     scatter!((fs[:,i] for i in 1:M)..., label="Approx. Front", markercolor=:lightgray, markerstrokewidth=0)
 
     fs = fvals(archive)
-    n = length(archive)
-    scatter!((fs[:,i] for i in 1:M)..., label="Prefered solutions ($n)", markercolor=:black)
+    scatter!((fs[:,i] for i in 1:M)..., label="Prefered solutions", markercolor=:black)
     savefig(p, "fig.png")
 
 
@@ -101,6 +100,7 @@ function get_ccmo_parms(d)
     options = Options(f_calls_limit=d[:fcalls],iterations=2d[:fcalls]*d[:N], seed=d[:seed], debug=false)
 
     algorithm_ = MOEAs.CCMO_NSGAII(;N = d[:N], options = options)
+    # algorithm_ = MOEAs.SMS_EMOA(;N = d[:N], options = options)
     algorithm = MOEAs.ROIs(algorithm_; weight_points, δ_w, ref_points, δ_r)
     algorithm, f, bounds
 end
@@ -108,7 +108,7 @@ end
 
 function main()
     seed = 1
-    fnum = 2
+    fnum = 3
     benchmark = :application
 
     d = Dict(
