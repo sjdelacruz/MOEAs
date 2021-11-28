@@ -443,9 +443,11 @@ version = "0.3.1"
 
 [[Metaheuristics]]
 deps = ["LinearAlgebra", "Pkg", "Printf", "Random", "Statistics", "Test", "UnicodePlots"]
-git-tree-sha1 = "d38c3409d8f9a3ce59245b4fb44e302690c604aa"
+git-tree-sha1 = "4f008cfa1bca6f9e3b28cf331db8157932cee571"
+repo-rev = "master"
+repo-url = "https://github.com/jmejia8/Metaheuristics.jl"
 uuid = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
-version = "3.1.1"
+version = "3.1.2"
 
 [[Missings]]
 deps = ["DataAPI"]

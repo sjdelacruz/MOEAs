@@ -18,7 +18,7 @@ function update_roi_archiving!(archive, population, ref_points, weight_points, �
         return
     end
     
-    empty!(archive)
+    #empty!(archive)
 
     fmin = ideal(population)
     fmax = nadir(population)
@@ -50,91 +50,35 @@ function update_roi_archiving!(archive, population, ref_points, weight_points, �
 
         # filtering based on ref points
         gx = minimum( i -> d(w[i], (fval(s) - fmin) ./ (fmax - fmin)) - δ_w[i], eachindex(w))
-        gx < 0 && push!(archive, deepcopy(s))
+        gx <= 0 && push!(archive, s)
         s.sum_violations += max(gx, 0)
         s.is_feasible = s.sum_violations <= 0
 
 
-        #=
-        if close_to_weight
-            next[i] = true
-        end
-        =#
     end
-    
 
-    #=
-    append!(archive, population)
+    truncate_archive(archive, ref_points, weight_points, δ_r, δ_w; max_archive_size)
+end
+
+function truncate_archive(archive, ref_points, weight_points, δ_r, δ_w; max_archive_size=2length(population))
     unique!(archive)
-    #=
     mask = Metaheuristics.get_non_dominated_solutions_perm(archive)
 
-    @show length(archive)
     if isempty(mask)
         empty!(archive)
-    end
-    =#
-
-
-    d = cosine_dist
-    dd = norm(fmin- fmax)
-    next = zeros(Bool, length(archive))
-    r = ref_points
-    w = weight_points
-    for i in mask
-        s = archive[i]
-
-        # filtering based on ref points
-        close_to_ref = any( i -> norm(r[i] - fval(s)) <= dd*δ_r[i], eachindex(r))
-        if close_to_ref
-            next[i] = true
-            continue
-        end
-
-        # filtering based on ref points
-        close_to_weight = any( i -> d(w[i], (fval(s) - fmin) ./ (fmax - fmin)) <= δ_w[i], eachindex(w))
-
-        if close_to_weight
-            next[i] = true
-        end
-    end
-
-    deleteat!(archive, .!next) 
-
-    if length(archive) < 0.1max_archive_size
+    elseif length(mask) == max_archive_size
         return
     end
+
+    next = zeros(Bool, length(archive))
+    next[mask] .= true
+    deleteat!(archive, .!next)
     
-    @info "population"
     if length(archive) > max_archive_size
         # SPEA2 truncation
         del  = Metaheuristics.truncation(archive, length(archive) - max_archive_size)
         deleteat!(archive, del) 
         return
     end
-
-    @info "clonning"
-    @show length(archive)
-
-    N = length(population)
-    fs = fvals(population)
-    M = size(fs,2)
-    extr = Int[argmin(fs[:,i]) for i in 1:M ]
-    extr2 = Int[argmax(fs[:,i]) for i in 1:M ]
-    append!(extr, extr2)
-    unique!(extr)
-    ss = population[extr]
-    empty!(population)
-    append!(population, ss)
-    
-    i = 1
-    while length(population) < N
-        push!(population, archive[i])
-        i += 1
-        i = i > length(archive) ? 1 : i
-    end
-    =#
-
-
 end
 
