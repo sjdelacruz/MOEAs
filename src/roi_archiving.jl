@@ -1,7 +1,7 @@
 using LinearAlgebra
 
-function update_roi_archiving!(archive, population, ref_points, weight_points, δ_r, δ_w; max_archive_size=2length(population))
-    if isempty(population) || (isempty(ref_points) && isempty(weight_points))
+function update_roi_archiving!(archive, population, weight_points, δ_w; max_archive_size=2length(population))
+    if isempty(population) ||  isempty(weight_points)
         # nothing to do
         return
     end
@@ -27,7 +27,6 @@ function update_roi_archiving!(archive, population, ref_points, weight_points, �
     d = cosine_dist
     dd = norm(fmin - fmax)
     next = zeros(Bool, length(archive))
-    r = ref_points
     w = weight_points
 
 
@@ -40,15 +39,8 @@ function update_roi_archiving!(archive, population, ref_points, weight_points, �
             continue
         end
 
-        #= filtering based on ref points
-        close_to_ref = any( i -> norm(r[i] - fval(s)) <= dd*δ_r[i], eachindex(r))
-        if close_to_ref
-            next[i] = true
-            continue
-        end
-        =#
 
-        # filtering based on ref points
+        # filtering based on weight_points
         gx = minimum( i -> d(w[i], (fval(s) - fmin) ./ (fmax - fmin)) - δ_w[i], eachindex(w))
         gx <= 0 && push!(archive, s)
         s.sum_violations += max(gx, 0)
@@ -57,15 +49,16 @@ function update_roi_archiving!(archive, population, ref_points, weight_points, �
 
     end
 
-    truncate_archive(archive, ref_points, weight_points, δ_r, δ_w; max_archive_size)
+    truncate_archive(archive,  weight_points, δ_w; max_archive_size)
 end
 
-function truncate_archive(archive, ref_points, weight_points, δ_r, δ_w; max_archive_size=2length(population))
+function truncate_archive(archive,  weight_points, δ_w; max_archive_size=2length(population))
     unique!(archive)
     mask = Metaheuristics.get_non_dominated_solutions_perm(archive)
 
     if isempty(mask)
         empty!(archive)
+        return
     elseif length(mask) == max_archive_size
         return
     end
