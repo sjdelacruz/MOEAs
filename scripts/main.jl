@@ -24,10 +24,6 @@ function get_problem(problem_idx, problem_type)
     # the threshold (cosine distance)
     δ_w = fill(0.1, length(weight_points))
 
-    ref_points = Vector{Float64}[
-                                 # [-0.032, 260]
-                                ]
-    δ_r = fill(0.1, length(ref_points))
 
     if problem_type == :constrianed        
         constrianed_problems =  [:C1_DTLZ1, :C2_DTLZ2, :C1_DTLZ3, :C3_DTLZ4 ]
@@ -55,20 +51,30 @@ function get_problem(problem_idx, problem_type)
                       ]
         f, conf =  get_RW_MOP_problem(rw_problems[problem_idx]);
         bounds = Array([conf[:xmin] conf[:xmax]]')
-        # f, bounds, _ = Metaheuristics.TestProblems.get_problem(:ZDT3)
-        front = []
+        data = BSON.load(joinpath(datadir(), "approx_fronts", "benchmark=application_fnum=$problem_idx.bson"))
+        fs = data["F"]
+        front = [ Metaheuristics.create_child(zeros(0), (fs[i,:],[0.0],[0.0])) for i in 1:size(fs, 1) ]
     end
 
-    f, bounds, front, weight_points, δ_w, ref_points, δ_r
+    f, bounds, front, weight_points, δ_w
 end
 
-function plot_res(archive, population, weight_points, ref_points)
+function plot_res(archive, res, d)
+    population = res.population
+    f, bounds, pf, weight_points, δ_w = get_problem(d["fnum"], d["benchmark"])
+
     M = length(Metaheuristics.fval(population[1]))
     p = plot(xlabel="f₁", ylabel="f₂", zlabel="f₃", dpi=200)
 
+    if isempty(pf)
+        z_ideal = ideal(population)
+        z_nad = nadir(population)
+    else
+        z_ideal = ideal(pf)
+        z_nad = nadir(pf)
+    end
+    
     # plot ref directions
-    z_ideal = ideal(population)
-    z_nad = nadir(population)
     for (i,w) in enumerate(weight_points)
         t = range(0,1, length=50)
         # scale to axis
@@ -79,14 +85,20 @@ function plot_res(archive, population, weight_points, ref_points)
     end
 
 
-    for r in ref_points
-        scatter!(r[1:1], r[2:2], markercolor=:red, label="")
-    end
 
     #= population
     fs = fvals(population)
     scatter!((fs[:,i] for i in 1:M)..., label="Approx. Front", markercolor=:lightgray, markerstrokewidth=0)
     =#
+
+
+    if !isempty(pf)
+        fs = fvals(pf)
+        scatter!((fs[:,i] for i in 1:M)...,
+                 label="Pareto-optimal Front",
+                 markercolor=:lightgray,
+                 markerstrokewidth=0)
+    end
 
     fs = fvals(archive)
     scatter!((fs[:,i] for i in 1:M)..., label="Preferred solutions", markercolor=:black)
@@ -97,7 +109,7 @@ end
 function get_parms(d) 
 
     N = d["N"]
-    f, bounds, front, weight_points, δ_w, ref_points, δ_r = get_problem(d["fnum"], d["benchmark"])
+    f, bounds, front, weight_points, δ_w = get_problem(d["fnum"], d["benchmark"])
     options = Options(f_calls_limit=d["fcalls"],iterations=2d["fcalls"]*N, seed=d["seed"], debug=false)
 
     if d["basealgorithm"] == :CCMO
@@ -120,7 +132,7 @@ function get_parms(d)
         error("Base algorithm $alg is not supported.")
     end
     
-    algorithm = MOEAs.ROIs(base_algorithm; weight_points, δ_w, ref_points, δ_r)
+    algorithm = MOEAs.ROIs(base_algorithm; weight_points, δ_w)
     algorithm, f, bounds
 end
 
@@ -128,7 +140,7 @@ end
 function main()
     seed = 1
     fnum = collect(1:4)
-    benchmark = :application
+    benchmark = :unconstrianed
     basealgorithm =  [:NSGA2, :CCMO, :SPEA2, :SMS_EMOA]
     fcalls = 100_000
     N = 100
@@ -145,10 +157,10 @@ function main()
 
         if isempty(archive)
             @warn "Archive is empty (unable satisfy preferences)."
-            return
+            continue
         end
 
-        plt = plot_res(archive, res.population, algorithm.parameters.weight_points,algorithm.parameters.ref_points)
+        plt = plot_res(archive, res, d)
 
         @info "Saving data and Plot..."
 
