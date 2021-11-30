@@ -223,7 +223,7 @@ end
 
 
 function main()
-    seed = 1
+    seed = collect(1:31)
     fnum = collect(1:4)
     benchmark = [:unconstrianed, :constrianed, :application]
     basealgorithm =  [:NSGA2, :CCMO, :SPEA2, :SMS_EMOA]

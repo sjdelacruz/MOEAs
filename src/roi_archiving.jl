@@ -75,7 +75,7 @@ function truncate_archive!(archive,  weight_points, δ_w; max_archive_size=lengt
     if isempty(mask)
         empty!(archive)
         return
-    elseif length(mask) == max_archive_size
+    elseif length(mask) <= max_archive_size
         return
     end
 
@@ -84,7 +84,7 @@ function truncate_archive!(archive,  weight_points, δ_w; max_archive_size=lengt
     deleteat!(archive, .!next)
     
     if length(archive) > max_archive_size
-        # SPEA2 truncation
+        # SPEA2 truncation/ knn
         del  = Metaheuristics.truncation(archive, length(archive) - max_archive_size)
         deleteat!(archive, del) 
         return
