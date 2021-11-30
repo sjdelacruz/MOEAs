@@ -24,9 +24,6 @@ function update_roi_archiving!(archive, population, weight_points, δ_w; max_arc
     fmax = nadir(population)
 
 
-    d = cosine_dist
-    dd = norm(fmin - fmax)
-    next = zeros(Bool, length(archive))
     w = weight_points
 
 
@@ -34,25 +31,44 @@ function update_roi_archiving!(archive, population, weight_points, δ_w; max_arc
     M = size(fs,2)
     extremas = vcat([argmin(fs[:,i]) for i in 1:M ], [argmax(fs[:,i]) for i in 1:M ])
     unique!(extremas)
+
+    g_roi = compute_rio_vio(population, fmin, fmax, weight_points, δ_w)
     for (l,s) in enumerate(population)
+        # filtering based on weight_points
+        gx = g_roi[l]
+        gx <= 0 && push!(archive, s)
+
+        # no manipulate extrema points
         if l in extremas
             continue
         end
 
-
-        # filtering based on weight_points
-        gx = minimum( i -> d(w[i], (fval(s) - fmin) ./ (fmax - fmin)) - δ_w[i], eachindex(w))
-        gx <= 0 && push!(archive, s)
         s.sum_violations += max(gx, 0)
         s.is_feasible = s.sum_violations <= 0
 
 
     end
 
-    truncate_archive(archive,  weight_points, δ_w; max_archive_size)
+    truncate_archive!(archive,  weight_points, δ_w; max_archive_size)
 end
 
-function truncate_archive(archive,  weight_points, δ_w; max_archive_size=2length(population))
+function compute_rio_vio(population, fmin, fmax, w, δ_w)
+
+    d = cosine_dist
+    g = zeros(length(population))
+    for (l,s) in enumerate(population)
+
+
+        # filtering based on weight_points
+        gx = minimum( i -> d(w[i], (fval(s) - fmin) ./ (fmax - fmin)) - δ_w[i], eachindex(w))
+        g[l] = max(gx,0)
+
+    end
+    return g
+end
+
+
+function truncate_archive!(archive,  weight_points, δ_w; max_archive_size=length(population))
     unique!(archive)
     mask = Metaheuristics.get_non_dominated_solutions_perm(archive)
 

@@ -15,6 +15,7 @@ function ROIs(algorithm = CCMO_NSGAII();
     length(weight_points) != length(δ_w) && error("|weight_points| is different to |δ_w|")
 
 
+    δ_w /= 2
     δ_w = 1 .- cos.(π/2*δ_w)
 
 
@@ -70,4 +71,20 @@ function Metaheuristics.final_stage!(
     )
 
     Metaheuristics.final_stage!(status, parameters.parameters,args...;kargs...)
+
+    # updating archive, remove those solutions not in ROI
+    archive = parameters.archive
+    if isempty(archive)
+        return
+    end
+
+    w = parameters.weight_points
+    δ_w = parameters.δ_w
+
+    fmin = ideal(status.population)
+    fmax = nadir(status.population)
+
+    g_roi = compute_rio_vio(archive, fmin, fmax, w, δ_w)
+    mask = g_roi .!= 0
+    deleteat!(archive, mask)
 end
