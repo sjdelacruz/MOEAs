@@ -75,7 +75,7 @@ function get_problem(problem_idx, problem_type, m = 2)
                       ]
         f, conf =  get_RW_MOP_problem(rw_problems[problem_idx]);
         bounds = Array([conf[:xmin] conf[:xmax]]')
-        data = BSON.load(joinpath(scripts(), "approx_fronts", "benchmark=application_fnum=$problem_idx.bson"))
+        data = BSON.load(joinpath(scriptsdir(), "approx_fronts", "benchmark=application_fnum=$problem_idx.bson"))
         fs = data["F"]
         front = [ Metaheuristics.create_child(zeros(0), (fs[i,:],[0.0],[0.0])) for i in 1:size(fs, 1) ]
     end
