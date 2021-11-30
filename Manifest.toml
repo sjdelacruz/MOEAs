@@ -443,8 +443,8 @@ version = "0.3.1"
 
 [[Metaheuristics]]
 deps = ["LinearAlgebra", "Pkg", "Printf", "Random", "Statistics", "Test", "UnicodePlots"]
-git-tree-sha1 = "4f008cfa1bca6f9e3b28cf331db8157932cee571"
-repo-rev = "master"
+git-tree-sha1 = "1303db0d45bb01c1c28e3fbe4b0f743e16455c5c"
+repo-rev = "develop"
 repo-url = "https://github.com/jmejia8/Metaheuristics.jl"
 uuid = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
 version = "3.1.2"

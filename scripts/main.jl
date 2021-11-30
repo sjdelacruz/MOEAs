@@ -3,6 +3,7 @@ using DrWatson
 using Metaheuristics
 using HardTestProblems
 using LinearAlgebra
+using BSON
 using Plots; gr()
 
 include("../src/MOEAs.jl")
@@ -14,7 +15,7 @@ function run_algorithm(algorithm, f, bounds)
 end
 
 
-function get_problem(problem_idx, problem_type)
+function get_problem(problem_idx, problem_type, m = 2)
 
     # preferences defined as weights
     weight_points = [[0.2,0.7, 0.1],
@@ -22,27 +23,50 @@ function get_problem(problem_idx, problem_type)
                    [0.7, 0.2, 0.1],
                   ]
     # the threshold (cosine distance)
-    δ_w = fill(0.1, length(weight_points))
+    δ_w = fill(0.2, length(weight_points))
 
-
-    if problem_type == :constrianed        
-        constrianed_problems =  [:C1_DTLZ1, :C2_DTLZ2, :C1_DTLZ3, :C3_DTLZ4 ]
-        problem = constrianed_problems[problem_idx]
-        D = 7
-        f, bounds, front = Metaheuristics.TestProblems.get_problem(problem)
-        bounds = bounds[:, 1:D]
-    elseif problem_type == :unconstrianed
-        uncostrianed_problems = [:DTLZ1, :DTLZ2, :DTLZ3, :DTLZ4]
-        problem = uncostrianed_problems[problem_idx]
-        f, bounds, front = Metaheuristics.TestProblems.get_problem(problem)
-    elseif problem_type ==:application
-
+    if m == 2
         weight_points = Vector{Float64}[
                                         [0.1, 0.9],
                                         [0.5, 0.5],
                                         [0.8, 0.2]
                                        ]
-        δ_w = fill(0.1, length(weight_points))
+        δ_w = fill(0.2, length(weight_points))
+    elseif m == 3
+        # preferences defined as weights
+        weight_points = [[0.2,0.7, 0.1],
+                         [0.25, 0.25, 0.5],
+                         [0.7, 0.2, 0.1],
+                        ]
+        # the threshold (cosine distance)
+        δ_w = fill(0.2, length(weight_points))
+    else
+        error("only for m = 2,3")
+    end
+    
+
+    if problem_type == :constrianed        
+        constrianed_problems =  [:C1_DTLZ1, :C2_DTLZ2, :C1_DTLZ3, :C3_DTLZ4 ]
+        problem = constrianed_problems[problem_idx]
+        f, bounds, front = Metaheuristics.TestProblems.get_problem(problem)
+
+        if m == 3
+            D = 7
+            bounds = bounds[:, 1:D]
+        end
+        expr = Meta.parse("Metaheuristics.TestProblems."* string(problem) )
+        getp = eval(expr)
+        ff, bounds, front = getp(m, gen_ref_dirs(m,100)) 
+        f = x -> ff(x, m)
+    elseif problem_type == :unconstrianed
+        uncostrianed_problems = [:DTLZ1, :DTLZ2, :DTLZ3, :DTLZ4]
+        problem = uncostrianed_problems[problem_idx]
+        expr = Meta.parse("Metaheuristics.TestProblems."* string(problem) )
+        getp = eval(expr)
+        ff, bounds, front = getp(m, gen_ref_dirs(m,100)) 
+        f = x -> ff(x, m)
+    elseif problem_type ==:application
+
         rw_problems = [
                        "pressure_vessel",
                        "vibrating_platform",
@@ -51,7 +75,7 @@ function get_problem(problem_idx, problem_type)
                       ]
         f, conf =  get_RW_MOP_problem(rw_problems[problem_idx]);
         bounds = Array([conf[:xmin] conf[:xmax]]')
-        data = BSON.load(joinpath(datadir(), "approx_fronts", "benchmark=application_fnum=$problem_idx.bson"))
+        data = BSON.load(joinpath(scripts(), "approx_fronts", "benchmark=application_fnum=$problem_idx.bson"))
         fs = data["F"]
         front = [ Metaheuristics.create_child(zeros(0), (fs[i,:],[0.0],[0.0])) for i in 1:size(fs, 1) ]
     end
@@ -73,15 +97,35 @@ function plot_res(archive, res, d)
         z_ideal = ideal(pf)
         z_nad = nadir(pf)
     end
-    
+ 
     # plot ref directions
     for (i,w) in enumerate(weight_points)
         t = range(0,1, length=50)
+        if M <= 3
+            w = w ./ norm(w)
+        end
+        
         # scale to axis
         ww =  w .* (z_nad - z_ideal)
         line = z_ideal' .+ t.*ww'
 
-        plot!((line[:,i] for i in 1:M)..., label="", color=:gray, lw=2)
+
+        if M == 2
+            δ = δ_w[i]/2 # .* t .* norm(z_nad - z_ideal)
+            #ww = (w .- δ) .* (z_nad - z_ideal)
+            θ = max(atan(w[2] / w[1]) - π*δ/2,  0)
+            ww = [cos(θ), sin(θ)] .* (z_nad - z_ideal)
+            ln = z_ideal' .+ t.* ww'
+            #plot!(ln[:,1], ln[:,2] .+ δ,  fill = (line[:,2] .- δ, :lightgray, 0.5), primary = false,linecolor = nothing,)
+            #
+            plot!((ln[:,i] for i in 1:M)..., label="", color=:gray, ls = :dot)
+            θ = min(atan(w[2] / w[1]) + π*δ/2,  π/2)
+            ww = [cos(θ), sin(θ)] .* (z_nad - z_ideal)
+            ln = z_ideal' .+ t.* ww'
+            plot!((ln[:,i] for i in 1:M)..., label="", color=:gray, ls = :dot)
+        end
+        plot!((line[:,i] for i in 1:M)..., label="", color=:gray, lw=2, arrow=true)
+        
     end
 
 
@@ -94,17 +138,38 @@ function plot_res(archive, res, d)
 
     if !isempty(pf)
         fs = fvals(pf)
-        scatter!((fs[:,i] for i in 1:M)...,
-                 label="Pareto-optimal Front",
-                 markercolor=:lightgray,
-                 markerstrokewidth=0)
+        if size(fs, 2) == 2
+            mask = sortperm(fs[:,1])
+            plot!(fs[mask,1], fs[mask,2], label="Pareto Front", color = :darkgray)
+        else
+            scatter!((fs[:,i] for i in 1:M)...,
+                     label="Pareto Front",
+                     markercolor=:lightgray,
+                     markerstrokewidth=0)
+        end
+        
     end
 
     fs = fvals(archive)
-    scatter!((fs[:,i] for i in 1:M)..., label="Preferred solutions", markercolor=:black)
+    scatter!((fs[:,i] for i in 1:M)..., label="Not in ROI", markercolor=:white)
+
+    # identify those solutions in ROI
+    mask = get_roi_perm(archive, z_ideal, z_nad, weight_points, δ_w)
+    if  !isempty(mask)
+        archive_ok = archive[mask]
+        fs = fvals(archive_ok)
+        scatter!((fs[:,i] for i in 1:M)..., label="In ROI", markercolor=:black)
+    end
 
     p
 end
+
+function get_roi_perm(archive, fmin, fmax, w, δ)
+    δ = 1 .- cos.(π/2*(δ/2)) # re-scale
+    mask = MOEAs.compute_rio_vio(archive, fmin, fmax, w, δ) .<= 0
+    return findall(mask)
+end
+
 
 function get_parms(d) 
 
@@ -136,11 +201,31 @@ function get_parms(d)
     algorithm, f, bounds
 end
 
+function compute_roi_hv(archive, d)
+    if isempty(archive)
+        return 0.0
+    end
+
+    f, bounds, front, weight_points, δ_w = get_problem(d["fnum"], d["benchmark"])
+
+    fmin = ideal(front)
+    fmax = nadir(front)
+
+    # keep only the ROI
+    mask = get_roi_perm(archive, fmin, fmax, weight_points, δ_w)
+    if isempty(mask)
+        return 0.0
+    end
+
+    return PerformanceIndicators.hypervolume(archive[mask], fmax)
+    
+end
+
 
 function main()
     seed = 1
     fnum = collect(1:4)
-    benchmark = :unconstrianed
+    benchmark = [:unconstrianed, :constrianed, :application]
     basealgorithm =  [:NSGA2, :CCMO, :SPEA2, :SMS_EMOA]
     fcalls = 100_000
     N = 100
@@ -171,6 +256,7 @@ function main()
                        "benchmark" => d["benchmark"],
                        "fnum" => d["fnum"],
                        "basealgorithm" => d["basealgorithm"],
+                       "HVROI" => compute_roi_hv(archive, d),
                        "seed" => d["seed"]
                       )
         wsave(datadir("simulations", savename(d, "bson")), results)
