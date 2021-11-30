@@ -54,7 +54,7 @@ function main()
                       )
 
         d = Dict("benchmark" => :application, "fnum" => fnum)
-        wsave(datadir("approx_fronts/", savename(d, "bson")), results)
+        wsave(scriptsdir("approx_fronts/", savename(d, "bson")), results)
     end
 end
 
