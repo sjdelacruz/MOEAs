@@ -25,24 +25,27 @@ include("CCMO_NSGAII.jl")
 
 function test_preferences()
     M = 3
-    ff, bounds, front = Metaheuristics.TestProblems.DTLZ2(M);
+    f, bounds, front = Metaheuristics.TestProblems.C2_DTLZ2(M);
     D = size(bounds,2)
 
     # preferences defined as weights
-    preferences = [[0.1,0.7, 0.1],
-                   [0.5, 0.5, 0.5]]
+    preferences = [[0.2,0.7, 0.1],
+                   [0.25, 0.25, 0.5],
+                   [0.7, 0.2, 0.1],
+                  ]
     # the threshold (cosine distance)
-    δ = 0.01
+    δ = fill(0.01, length(preferences))
 
-    # preferences as constraints
+    #= preferences as constraints
     f(x,w=preferences,δ=δ) = begin
         fx = ff(x)[1]
         g = [cosine_dist(fx, ww) - δ for ww in w] 
         return fx, [minimum(g)], [0.0]
     end
+    =#
 
-    options = Options(f_calls_limit=100000, debug=false)
-    algorithm = CCMO_NSGAII(N = 105, p_cr = 1.0, p_m= (1.0/D), options = options)
+    options = Options(f_calls_limit=100000,iterations=10000, debug=false)
+    algorithm = CCMO_NSGAII(;N = 105, p_cr = 0.9, p_m= (1.0/D), options = options, preferences,δ)
     res = Metaheuristics.optimize(f, bounds, algorithm)
     display(res)
     p = plot(layout=(1,2),xlabel="f₁", ylabel="f₂", zlabel="f₃",xlim=[0,1],ylim=[0,1], zlim=[0,1])

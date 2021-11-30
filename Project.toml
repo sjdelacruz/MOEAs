@@ -1,0 +1,16 @@
+name = "MOEAs"
+authors = ["Sebastian and Jesus"]
+
+[deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+HardTestProblems = "017f2a17-63a9-4ea1-9ce1-f7de69e6e227"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Metaheuristics = "bcdb8e00-2c21-11e9-3065-2b553b22f898"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+DrWatson = "2.7.3"
+julia = "1.6.0"
